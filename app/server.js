@@ -7,8 +7,16 @@ var express = require('express'),
     morgan     = require('morgan'),
     sequelize  = require('sequelize'),
     passport   = require('passport'),
+    path       = require('path'),
+    cors       = require("cors"),
+    errorHandler = require('./errors').errorHandler,
     jwt        = require('jsonwebtoken');
 
+
+
+var corsOptions = {
+    origin: "http://localhost:8080"
+};
 
 var hookJWTStrategy = require('./services/passportStrategy');
 
@@ -20,6 +28,9 @@ var hookJWTStrategy = require('./services/passportStrategy');
 
 var app = express();
 
+var env = app.get('env') == 'development' ? 'dev' : app.get('env');
+var port = process.env.PORT || 8080;
+
 
 // 4: Parse as urlencoded and json.
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -30,6 +41,8 @@ app.use(bodyParser.json());
 app.use(morgan('dev'));
 
 
+app.use(cors(corsOptions));
+
 // 6: Hook up Passport.
 app.use(passport.initialize());
 
@@ -39,12 +52,20 @@ hookJWTStrategy(passport);
 // 7: Set the static files location.
 app.use(express.static(__dirname + '../../public'));
 
-// 8: Home route.
-app.get('/', function (req, res) {
-    res.send('Nice meeting you wizard, I\'m Gandalf!');
+// 8: Route Errors Handdle.
+
+app.use(errorHandler);
+
+
+// Bundle API routes.
+require('./routes/api')(app , passport)
+
+
+app.get('*', function (req, res) {
+    res.status(404).send(`The Route ${req.path} Not Found !`);
 });
 
 
-app.listen('8080' , () => {
+app.listen(port , () => {
     console.log('Magic happens at http://localhost:8080/! We are all now doomed!')
 });

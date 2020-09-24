@@ -18,6 +18,10 @@ var modelDefinition = {
     password: {
         type: Sequelize.STRING,
         allowNull: false
+    },
+    role: {
+        type: Sequelize.INTEGER,
+        defaultValue: config.userRoles.user
     }
 };
 
@@ -28,13 +32,23 @@ var modelOptions = {
         comparePasswords: comparePasswords
     },
     hooks: {
-        beforeValidate: hashPassword
+        beforeValidate: hashPassword,
     }
 };
 
 
 // 3: Define the User model.
 var User = db.define('user', modelDefinition, modelOptions);
+
+User.prototype.comparePasswords = function (password, callback) {
+    bcrypt.compare(password, this.password, function (error, isMatch) {
+        if (error) {
+            return callback(error);
+        }
+
+        return callback(null, isMatch);
+    });
+}
 
 // Compares two passwords.
 function comparePasswords(password, callback) {
